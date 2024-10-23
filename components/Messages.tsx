@@ -1,4 +1,5 @@
 "use client";
+
 import { cn } from "@/utils";
 import { useVoice } from "@humeai/voice-react";
 import Expressions from "./Expressions";
@@ -18,7 +19,7 @@ const Messages = forwardRef<
       ref={ref}
     >
       <motion.div
-        className={"max-w-2xl mx-auto w-full flex flex-col gap-4 pb-24"}
+        className={"max-w-4xl mx-auto w-full flex flex-col gap-4 pb-24"}
       >
         <AnimatePresence mode={"popLayout"}>
           {messages.map((msg, index) => {
@@ -30,7 +31,7 @@ const Messages = forwardRef<
                 <motion.div
                   key={msg.type + index}
                   className={cn(
-                    "w-[80%]",
+                    "w-full",
                     "bg-card",
                     "border border-border rounded",
                     msg.type === "user_message" ? "ml-auto" : ""
@@ -55,7 +56,9 @@ const Messages = forwardRef<
                   >
                     {msg.message.role}
                   </div>
-                  <div className={"pb-3 px-3"}>{msg.message.content}</div>
+                  <div className={"pb-3 px-3 whitespace-pre-wrap break-words"}>
+                    {msg.message.content}
+                  </div>
                   <Expressions values={{ ...msg.models.prosody?.scores }} />
                 </motion.div>
               );
