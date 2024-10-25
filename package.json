@@ -43,3 +43,9 @@
     "typescript": "^5"
   }
 }
+{
+  "dependencies": {
+    "@vercel/postgres": "^0.5.0",
+    // ... other dependencies
+  }
+}
