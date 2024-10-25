@@ -6,7 +6,6 @@ import Controls from "./Controls";
 import StartCall from "./StartCall";
 import { storeUser, getUser, updateLastInteraction } from '../utils/db';
 import { useState, useEffect } from 'react';
-import { storeUser, getUser, updateLastInteraction } from '../utils/db';
 
 export default function Chat({ accessToken }: { accessToken: string }) {
   const { status, messages, sendMessage } = useVoice();
