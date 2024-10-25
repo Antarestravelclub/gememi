@@ -1,52 +1,76 @@
 "use client";
 
-import { VoiceProvider } from "@humeai/voice-react";
+import { useVoice } from "@humeai/voice-react";
 import Messages from "./Messages";
 import Controls from "./Controls";
 import StartCall from "./StartCall";
-import { ComponentRef, useRef } from "react";
+import { storeUser, getUser, updateLastInteraction } from '../utils/db';
+import { useState, useEffect } from 'react';
 
-export default function ClientComponent({
-  accessToken,
-}: {
-  accessToken: string;
-}) {
-  const timeout = useRef<number | null>(null);
-  const ref = useRef<ComponentRef<typeof Messages> | null>(null);
+export default function Chat({ accessToken }: { accessToken: string }) {
+  const { status, messages, sendMessage } = useVoice();
+  const [userEmail, setUserEmail] = useState<string>('');
+  const [userName, setUserName] = useState<string>('');
 
-  // optional: use configId from environment variable
-  const configId = process.env['NEXT_PUBLIC_HUME_CONFIG_ID'];
-  
-  return (
-    <div
-      className={
-        "relative grow flex flex-col mx-auto w-full overflow-hidden h-[0px]"
-      }
-    >
-      <VoiceProvider
-        auth={{ type: "accessToken", value: accessToken }}
-        configId={configId}
-        onMessage={() => {
-          if (timeout.current) {
-            window.clearTimeout(timeout.current);
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (userEmail) {
+        try {
+          const user = await getUser(userEmail);
+          if (user) {
+            setUserName(user.name);
+            await updateLastInteraction(userEmail);
           }
+        } catch (error) {
+          console.error('Error fetching user data:', error);
+        }
+      }
+    };
+    fetchUserData();
+  }, [userEmail]);
 
-          timeout.current = window.setTimeout(() => {
-            if (ref.current) {
-              const scrollHeight = ref.current.scrollHeight;
+  const handleUserMessage = async (message: string) => {
+    await sendMessage(message);
+    
+    const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/;
+    const match = message.match(emailRegex);
+    if (match) {
+      setUserEmail(match[0]);
+    }
 
-              ref.current.scrollTo({
-                top: scrollHeight,
-                behavior: "smooth",
-              });
-            }
-          }, 200);
-        }}
-      >
-        <Messages ref={ref} />
-        <Controls />
-        <StartCall />
-      </VoiceProvider>
+    if (message.toLowerCase().includes("book appointment") || message.toLowerCase().includes("schedule meeting")) {
+      handleAppointmentRequest();
+    }
+
+    if (!userName && message.toLowerCase().includes("my name is")) {
+      const nameMatch = message.match(/my name is (\w+)/i);
+      if (nameMatch && nameMatch[1]) {
+        const extractedName = nameMatch[1];
+        setUserName(extractedName);
+        try {
+          await storeUser(extractedName, userEmail);
+        } catch (error) {
+          console.error('Error storing user:', error);
+        }
+      }
+    }
+  };
+
+  const handleAppointmentRequest = async () => {
+    const appointmentInfo = setAppointment({});
+    await sendMessage(appointmentInfo.message);
+  };
+
+  return (
+    <div className="flex flex-col h-screen">
+      {status.value === "connected" ? (
+        <>
+          <Messages messages={messages} />
+          <Controls onSendMessage={handleUserMessage} />
+        </>
+      ) : (
+        <StartCall accessToken={accessToken} />
+      )}
     </div>
   );
 }
